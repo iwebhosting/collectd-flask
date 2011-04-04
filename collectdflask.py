@@ -3,7 +3,7 @@ from flask import Flask, render_template, request
 from json import loads
 from httplib2 import Http
 import sys
-import fnmatch
+import re
 from os import listdir
 from os.path import isdir, join
 
@@ -38,7 +38,8 @@ def get_hosts(pattern=None):
     hosts = [h for h in listdir(datadir) if isdir(join(datadir, h))]
     hosts.sort()
     if pattern:
-        return fnmatch.filter(hosts, pattern)
+        pattern_re = re.compile(pattern)
+        return [x for x in hosts if pattern_re.match(x)]
     return hosts
 
 def get_plugins_for_host(hostname, pattern=None):
@@ -47,7 +48,8 @@ def get_plugins_for_host(hostname, pattern=None):
     plugins = list(set(plugins))
     plugins.sort()
     if pattern:
-        return fnmatch.filter(plugins, pattern)
+        pattern_re = re.compile(pattern)
+        return [x for x in plugins if pattern_re.match(x)]
     return plugins
 
 def graph(hosts, plugins, period='month'):
