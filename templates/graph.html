@@ -7,7 +7,7 @@
 {% for host in hosts %}
   <h2>{{ host }}</h2>
   {% for plugin in plugins[host] %}
-    <h3>{{ plugin }}</h3>
+    <h3><a href="{{ plugin }}/?period={{ period }}&amp;pattern={{ patterna }}">{{ plugin }}</a></h3>
     {% for graph in graphs[host][plugin] %}
      <img src="{{ graph }}"><br/>
     {% endfor %}
