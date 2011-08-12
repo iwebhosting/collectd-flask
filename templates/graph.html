@@ -1,7 +1,12 @@
 <h2>Period<h2>
-{% for p in ['hour', 'day', 'week', 'month'] %}
-  {% if period == p %}{{ p }} {% else %}<a href='?period={{ p }}'>{{ p }}</a> {% endif %}
+{% for p in ['hour', 'day', 'week', 'month', 'year'] %}
+  {% if period == p %}{{ p }} {% else %}<a href='?period={{ p }}&amp;pattern={{ patterna }}'>{{ p }}</a> {% endif %}
 {% endfor %}
+
+<form action="" method="get">
+<input name="pattern" value="{{ patterna }}" style="width: 50%"/>
+<input name="period" value="{{ period }}" type="hidden"/>
+</form>
 
 <h1>Graphs</h1>
 {% for host in hosts %}

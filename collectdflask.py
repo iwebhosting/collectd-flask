@@ -52,13 +52,18 @@ def get_plugins_for_host(hostname, pattern=None):
         return [x for x in plugins if pattern_re.match(x)]
     return plugins
 
-def graph(hosts, plugins, period='month'):
+def graph(hosts, plugins, period='month', pattern=None):
     graphs = {}
     for host in hosts:
         graphs[host] = {}
         for plugin in plugins[host]:
-            graphs[host][plugin] = [app.config['COLLECTD_WEB_PREFIX'] + x for x in json_request('graphs_json', host=host, plugin=plugin)[period]]
-    return render_template('graph.html', hosts=hosts, plugins=plugins, graphs=graphs, period=period)
+            plugins_for_period = [app.config['COLLECTD_WEB_PREFIX'] + x for x in json_request('graphs_json', host=host, plugin=plugin)[period]]
+            if pattern:
+                pattern_re = re.compile(pattern)
+                graphs[host][plugin] = [x for x in plugins_for_period if pattern_re.search(x)]
+            else:
+                graphs[host][plugin] = plugins_for_period
+    return render_template('graph.html', hosts=hosts, plugins=plugins, graphs=graphs, period=period, patterna=pattern or '')
 
 @app.route('/')
 def index():
@@ -71,19 +76,21 @@ def index():
 
 @app.route('/<hostpattern>/')
 def graph_by_host(hostpattern):
+    graph_pattern = request.args.get('pattern')
     hosts = get_hosts(hostpattern)
     plugins = {}
     for h in hosts:
         plugins[h] = get_plugins_for_host(h)
-    return graph(hosts, plugins, request.args.get('period', 'month'))
+    return graph(hosts, plugins, request.args.get('period', 'month'), graph_pattern)
 
 @app.route('/<hostpattern>/<pluginpattern>/')
 def graph_by_host_with_plugin(hostpattern, pluginpattern):
+    graph_pattern = request.args.get('pattern')
     hosts = get_hosts(hostpattern)
     plugins = {}
     for h in hosts:
         plugins[h] = get_plugins_for_host(h, pluginpattern)
-    return graph(hosts, plugins, request.args.get('period', 'month'))
+    return graph(hosts, plugins, request.args.get('period', 'month'), graph_pattern)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
