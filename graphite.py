@@ -1,5 +1,6 @@
 import requests
 import json
+import urllib
 
 periods = {
     'hour': '-60minutes',
@@ -7,6 +8,19 @@ periods = {
     'week': '-7days',
     'month': '-30days',
     'year': '-365days',
+}
+
+basic_graph = {
+    'width': 800,
+    'from': '-2hours',
+    'until': 'now',
+    'height': 250,
+    'fontName': 'Sans',
+    'lineMode': 'connected',
+    'hideLegend': 'false',
+    'fontBold': 'true',
+    'bgcolor': 'FFFFFF',
+    'fgcolor': '000000',
 }
 
 def walker(hostname, path, deep=False):
@@ -22,10 +36,32 @@ def walker(hostname, path, deep=False):
         return ids
     return walk(path, deep)
 
+def make_graph_url(hostname, overrides={}, targets=[]):
+    d = basic_graph.copy()
+    d.update(overrides)
+    args = d.items()
+    args = args + [('target', target) for target in targets]
+    return 'http://' + hostname + '/render?' + urllib.urlencode(args)
+
 def draw_graph(graph, host, plugin, hostname, period):
-    from_at = periods[period]
+    d = {}
+    d['from'] = periods[period]
     if plugin == 'interface':
-        interface_url = 'http://%(hostname)s/render?width=400&from=%(from_at)s&until=now&height=250&fontName=Sans&lineMode=connected&hideLegend=false&target=alias(scale(%(host)s.interface.%(graph)s.if_octets.tx%%2C8)%%2C%%20%%22Transmitted%%20Bits%%2Fs%%22)&target=alias(scale(%(host)s.interface.%(graph)s.if_octets.rx%%2C8)%%2C%%22Received%%20Bits%%2Fs%%22)&title=%(graph)s%%20interface&fontBold=true&bgcolor=FFFFFF&fgcolor=000000' % dict(locals())
-        return interface_url
+        d['title'] = '%s interface on %s' % (graph, host)
+        targets = [
+            '''alias(scale(%(host)s.interface.%(graph)s.if_octets.tx, 8), "Transmitted Bits/s")''' % locals(),
+            '''alias(scale(%(host)s.interface.%(graph)s.if_octets.rx, 8), "Received Bits/s")''' % locals(),
+        ]
+        return make_graph_url(hostname, d, targets)
+    elif plugin == 'cpu':
+        d['title'] = 'CPU%s on %s' % (graph, host)
+        d['areaMode'] = 'stacked'
+        d['max'] = '100'
+        bits = dict(idle='Idle', softirq='Soft IRQ', user='User',
+            interrupt='Interrupt', steal='Steal', wait='Wait', nice='Nice',
+            system='System')
+        targets = [ ('''alias(%(host)s.cpu.%(graph)s.cpu.%%s.value, "%%s")''' %
+            locals()) % (k, v) for k, v in bits.items() ]
+        return make_graph_url(hostname, d, targets)
     else:
-        return 'http://insom.me.uk/fnf'
+        return '/404'
