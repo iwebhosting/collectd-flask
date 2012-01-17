@@ -40,11 +40,12 @@ def get_graphs_for_plugin(hostname, plugin, pattern=None):
     return plugins
 
 def graph(hosts, plugins, period='month', pattern=None):
+    graphite_hostname = app.config['GRAPHITE_WEB_HOST']
     graphs = {}
     for host in hosts:
         graphs[host] = {}
         for plugin in plugins[host]:
-            plugins_for_period = [GG(x) for x in get_graphs_for_plugin(host, plugin)]
+            plugins_for_period = [GG(x, host, plugin, graphite_hostname, period) for x in get_graphs_for_plugin(host, plugin)]
             if pattern:
                 pattern_re = re.compile(pattern)
                 graphs[host][plugin] = [x for x in plugins_for_period if pattern_re.search(x)]
