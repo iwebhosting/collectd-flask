@@ -78,5 +78,11 @@ def draw_graph(graph, host, plugin, hostname, period):
         targets_write = [ ('''alias(%(host)s.disk.%(graph)s.disk_%%s.write, "%%s Write")''' % 
             locals()) % (k, v) for k, v in bits.items() ]
         return make_graph_url(hostname, d, targets_read + targets_write)
+    elif plugin == 'load':
+        d['title'] = 'Load on %s' % (host)
+        bits = [('shortterm', '1 Minute'), ('midterm', '5 Minute'), ('longterm', '15 Minute')]
+        targets = [ ('''alias(%(host)s.load.load.%%s, "%%s")''' % 
+            locals()) % (k, v) for k, v in bits ]
+        return make_graph_url(hostname, d, targets)
     else:
         return '/404'
