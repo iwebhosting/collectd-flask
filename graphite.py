@@ -13,3 +13,6 @@ def walker(hostname, path, deep=False):
                 walk(node['id'] + '.*', deep)
         return ids
     return walk(path, deep)
+
+def draw_graph(graph):
+    return 'oops'

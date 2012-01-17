@@ -1,41 +1,22 @@
 #!/usr/bin/python
+from graphite import walker as G
+from graphite import draw_graph as GG
 from flask import Flask, render_template, request
-from json import loads
-from httplib2 import Http
 import sys
 import re
 from os import listdir
 from os.path import isdir, join
 
-COLLECTD_WEB_URL = 'http://example.com/cgi-bin'
-COLLECTD_WEB_PREFIX = 'http://example.com'
-COLLECTD_DATA_DIR = '/var/lib/collectd'
+GRAPHITE_WEB_HOST = 'example.com:8080'
 
 app = Flask(__name__)
 app.debug = True
 app.config.from_object(__name__)
 app.config.from_envvar('CF_SETTINGS', silent=True)
 
-h = Http()
-
-cache = {}
-
-def json_request(action, **parameters):
-    key = repr((action, parameters))
-    if cache.has_key(key):
-        return cache[key]
-    uri = ['%s/cgi-bin/collection.modified.cgi?action=%s' % (app.config['COLLECTD_WEB_URL'], action)]
-    uri = uri + ['%s=%s' % (k, v) for k, v in parameters.items()]
-    res, body = h.request(';'.join(uri))
-    decoded_object = loads(body)
-    cache[key] = decoded_object
-    if app.debug:
-        print >>sys.stderr, key
-    return decoded_object
-
 def get_hosts(pattern=None):
-    datadir = app.config['COLLECTD_DATA_DIR']
-    hosts = [h for h in listdir(datadir) if isdir(join(datadir, h))]
+    graphite_hostname = app.config['GRAPHITE_WEB_HOST']
+    hosts = [h for h in G(graphite_hostname, '*')]
     hosts.sort()
     if pattern:
         pattern_re = re.compile(pattern)
@@ -43,10 +24,16 @@ def get_hosts(pattern=None):
     return hosts
 
 def get_plugins_for_host(hostname, pattern=None):
-    plugindir = join(app.config['COLLECTD_DATA_DIR'], hostname)
-    plugins = [p.split('-', 1)[0] for p in listdir(plugindir) if isdir(join(plugindir, p))]
-    plugins = list(set(plugins))
-    plugins.sort()
+    graphite_hostname = app.config['GRAPHITE_WEB_HOST']
+    plugins = [p.replace('%s.' % hostname, '') for p in G(graphite_hostname, '%s.*' % hostname)]
+    if pattern:
+        pattern_re = re.compile(pattern)
+        return [x for x in plugins if pattern_re.match(x)]
+    return plugins
+
+def get_graphs_for_plugin(hostname, plugin, pattern=None):
+    graphite_hostname = app.config['GRAPHITE_WEB_HOST']
+    plugins = [p.replace('%s.%s.' % (hostname, plugin), '') for p in G(graphite_hostname, '%s.%s.*' % (hostname, plugin))]
     if pattern:
         pattern_re = re.compile(pattern)
         return [x for x in plugins if pattern_re.match(x)]
@@ -57,7 +44,7 @@ def graph(hosts, plugins, period='month', pattern=None):
     for host in hosts:
         graphs[host] = {}
         for plugin in plugins[host]:
-            plugins_for_period = [app.config['COLLECTD_WEB_PREFIX'] + x for x in json_request('graphs_json', host=host, plugin=plugin)[period]]
+            plugins_for_period = [GG(x) for x in get_graphs_for_plugin(host, plugin)]
             if pattern:
                 pattern_re = re.compile(pattern)
                 graphs[host][plugin] = [x for x in plugins_for_period if pattern_re.search(x)]
