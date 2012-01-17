@@ -84,5 +84,12 @@ def draw_graph(graph, host, plugin, hostname, period):
         targets = [ ('''alias(%(host)s.load.load.%%s, "%%s")''' % 
             locals()) % (k, v) for k, v in bits ]
         return make_graph_url(hostname, d, targets)
+    elif plugin == 'memory':
+        d['title'] = 'Memory on %s' % (host)
+        d['areaMode'] = 'stacked'
+        bits = [('used', 'Used'), ('buffered', 'Buffered'), ('cached', 'Cached'), ('free', 'Free')]
+        targets = [ ('''alias(%(host)s.memory.memory.%%s.value, "%%s")''' %
+            locals()) % (k, v) for k, v in bits ]
+        return make_graph_url(hostname, d, targets)
     else:
         return '/404'
