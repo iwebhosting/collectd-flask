@@ -91,5 +91,17 @@ def draw_graph(graph, host, plugin, hostname, period):
         targets = [ ('''alias(%(host)s.memory.memory.%%s.value, "%%s")''' %
             locals()) % (k, v) for k, v in bits ]
         return make_graph_url(hostname, d, targets)
+    elif plugin == 'processes':
+        d['title'] = 'Processes on %s' % (host)
+        d['areaMode'] = 'stacked'
+        bits = ['running', 'blocked', 'paging', 'sleeping', 'stopped', 'zombies']
+        targets = [ ('''alias(%(host)s.processes.ps_state.%%s.value, "%%s")''' %
+            locals()) % (k, k) for k in bits ]
+        return make_graph_url(hostname, d, targets)
+    elif plugin == 'uptime':
+        d['title'] = 'Uptime on %s' % (host)
+        d['areaMode'] = 'stacked'
+        targets = [ '''alias(%(host)s.uptime.uptime.value, "Uptime")''' % locals() ]
+        return make_graph_url(hostname, d, targets)
     else:
         return '/404'
