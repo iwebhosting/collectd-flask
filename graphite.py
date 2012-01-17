@@ -63,5 +63,20 @@ def draw_graph(graph, host, plugin, hostname, period):
         targets = [ ('''alias(%(host)s.cpu.%(graph)s.cpu.%%s.value, "%%s")''' %
             locals()) % (k, v) for k, v in bits.items() ]
         return make_graph_url(hostname, d, targets)
+    elif plugin == 'df':
+        d['title'] = '%s space on %s' % (graph, host)
+        d['areaMode'] = 'stacked'
+        bits = dict(free='Free', reserved='Reserved', used='Used')
+        targets = [ ('''alias(%(host)s.df.%(graph)s.df_complex.%%s.value, "%%s")''' %
+            locals()) % (k, v) for k, v in bits.items() ]
+        return make_graph_url(hostname, d, targets)
+    elif plugin == 'disk':
+        d['title'] = '%s IOs on %s' % (graph, host)
+        bits = dict(merged='Merged', octets='Octets', ops='Operations', time='Time')
+        targets_read = [ ('''alias(%(host)s.disk.%(graph)s.disk_%%s.read, "%%s Read")''' % 
+            locals()) % (k, v) for k, v in bits.items() ]
+        targets_write = [ ('''alias(%(host)s.disk.%(graph)s.disk_%%s.write, "%%s Write")''' % 
+            locals()) % (k, v) for k, v in bits.items() ]
+        return make_graph_url(hostname, d, targets_read + targets_write)
     else:
         return '/404'
