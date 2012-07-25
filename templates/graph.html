@@ -1,3 +1,10 @@
+<html>
+<head>
+{% if refresh %}
+<meta http-equiv="refresh" content="60">
+{% endif %}
+</head>
+<body>
 <h2>Period<h2>
 {% for p in ['hour', 'day', 'week', 'month', 'year'] %}
   {% if period == p %}{{ p }} {% else %}<a href='?period={{ p }}&amp;pattern={{ patterna }}'>{{ p }}</a> {% endif %}
@@ -19,3 +26,5 @@
   {% endfor %}
 {% endfor %}
 </ul>
+</body>
+</html>
